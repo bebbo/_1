@@ -10,7 +10,7 @@ char dtabuf[96];
 char adrbuf[64];
 
 
-char *itoa(long integer)
+char *itostr(long integer)
 {
 	static char buf[16];
 

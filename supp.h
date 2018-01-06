@@ -58,7 +58,7 @@ struct List
 #define lmovmem(x,y,a) memmove(y,x,(a)*sizeof(LONG))
 
 void ExitPrg(CONST_STRPTR , ...);
-char *itoa(long);
+char *itostr(long);
 char *itohex(unsigned long, unsigned long);
 void mnecat(const char *);
 void adrcat(const char *);
