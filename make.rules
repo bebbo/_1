@@ -1,0 +1,27 @@
+COMPILE	= $(CC) $(COPTS) $(CCOUT)$@ #$<
+DIR	= obj
+OBJS	= $(DIR)/ira$(OS).o $(DIR)/ira_2$(OS).o $(DIR)/supp$(OS).o
+
+all: ira$(OS)$(EXT)
+
+ira$(OS)$(EXT): $(OBJS)
+	$(LD) $(LDOUT)$@ $(OBJS) $(LDFLAGS)
+
+$(DIR)/ira$(OS).o: ira.c ira.h supp.h
+	$(COMPILE) ira.c
+
+$(DIR)/ira_2$(OS).o: ira_2.c ira.h supp.h
+	$(COMPILE) ira_2.c
+
+$(DIR)/supp$(OS).o: supp.c supp.h
+	$(COMPILE) supp.c
+
+clean:
+	$(RM) ira$(OS)$(EXT) $(OBJS)
+
+FILES	= ira_68k ira_mos ira_os4 ira.readme ira.doc ira.c ira.h ira_2.c \
+          make.rules Makefile Makefile.mos Makefile.os3 Makefile.os4 \
+          Makefile.win32 obj/.dummy supp.c supp.h
+
+ira.lha: $(FILES)
+	lha -r a ira.lha $(FILES)

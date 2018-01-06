@@ -1,0 +1,9 @@
+OS	= osx
+EXT	=
+CC	= cc
+CCOUT	= -o 
+COPTS	= -c -O2 -m32
+LD	= $(CC)
+LDOUT	= $(CCOUT)
+LDFLAGS	= -m32
+include make.rules
