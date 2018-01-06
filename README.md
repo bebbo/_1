@@ -1,4 +1,4 @@
-Short:		MC68000/10/20/30/40 reassembler
+```Short:		MC68000/10/20/30/40 reassembler
 Author:		Tim Ruehsen, Christian Wasner, Ilkka Lehtoranta, Frank Wille
 Uploader:	frank@phoenix.owl.de
 Type:		dev/asm
@@ -254,3 +254,4 @@ Tim Ruehsen, should not be contacted as he left the Amiga and stopped
 working on IRA many years ago.
 
 For bug reports, suggestions, etc. contact Frank Wille (frank@phoenix.owl.de).
+```
