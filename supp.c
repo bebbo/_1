@@ -1,306 +1,282 @@
+/*
+ * supp.c
+ *
+ *      Author   : Tim Ruehsen, Crisi, Frank Wille, Nicolas Bastien
+ *      Project  : IRA  -  680x0 Interactive ReAssembler
+ *      Part     : supp.c
+ *      Purpose  : Extended functions
+ *      Copyright: (C)1993-1995 Tim Ruehsen
+ *                 (C)2009-2015 Frank Wille, (C)2014-2016 Nicolas Bastien
+ */
+
 #include <ctype.h>
-#include <limits.h>
+#include <stdlib.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
-#include "supp.h"
 
-char mnebuf[32];
-char dtabuf[96];
-char adrbuf[64];
+#include "ira.h"
 
+extern ira_t *ira;
 
-char *itostr(long integer)
+void *myalloc(size_t sz)
 {
-	static char buf[16];
+   void *p = NULL;
 
-	sprintf(buf,"%ld",integer);
-	return buf;
+   if (sz && (p = malloc(sz)) == NULL)
+      ExitPrg("Out of memory (allocating %u bytes)!", (unsigned) sz);
+   return p;
 }
 
-char *itohex(unsigned long integer, unsigned long len)
+void *mycalloc(size_t sz)
 {
-	static char buf[16];
-	static char fmtbuf[] = "%04.4lx";
+   void *p = myalloc(sz);
 
-	fmtbuf[2] = len + '0';
-	fmtbuf[4] = len + '0';
-	sprintf(buf,fmtbuf,integer);
-	return buf;
+   memset(p, 0, sz);
+   return p;
+}
+
+void *myrealloc(void *p, size_t sz)
+{
+   void *q;
+
+   if ((q = realloc(p, sz)) == NULL)
+      ExitPrg("Out of memory (reallocating %u bytes)!", (unsigned) sz);
+   return q;
+}
+
+char *itoa(int32_t integer)
+{
+   static char buf[16];
+
+   sprintf(buf, "%ld", (long) integer);
+   return buf;
+}
+
+char *itohex(uint32_t integer, uint8_t len)
+{
+   static char buf[16];
+   static char fmtbuf[] = "%04.4lx";
+
+   fmtbuf[2] = len + '0';
+   fmtbuf[4] = len + '0';
+   sprintf(buf, fmtbuf, integer);
+   return buf;
 }
 
 void mnecat(const char *buf)
 {
-	static unsigned long cnt;
-	char *dst;
-	unsigned char c;
+   static unsigned long cnt;
+   char *dst;
+   unsigned char c;
 
-	dst = &mnebuf[ mnebuf[0] ? cnt : 0 ];
+   dst = &ira->mnebuf[ira->mnebuf[0] ? cnt : 0];
 
-	do
-	{
-		c = *buf++;
-		*dst++ = c;
-	}
-	while (c);
+   do
+   {
+      c = *buf++;
+      *dst++ = c;
+   } while (c);
 
-	cnt = dst - &mnebuf[0] - 1;
+   cnt = dst - &ira->mnebuf[0] - 1;
 }
 
 void dtacat(const char *buf)
 {
-	static unsigned long cnt;
-	char *dst;
-	unsigned char c;
+   static unsigned long cnt;
+   char *dst;
+   unsigned char c;
 
-	dst = &dtabuf[ dtabuf[0] ? cnt : 0 ];
+   dst = &ira->dtabuf[ira->dtabuf[0] ? cnt : 0];
 
-	do
-	{
-		c = *buf++;
-		*dst++ = c;
-	}
-	while (c);
+   do
+   {
+      c = *buf++;
+      *dst++ = c;
+   } while (c);
 
-	cnt = dst - &dtabuf[0] - 1;
+   cnt = dst - &ira->dtabuf[0] - 1;
 }
 
 void adrcat(const char *buf)
 {
-	static unsigned long cnt;
-	char *dst;
-	unsigned char c;
+   static unsigned long cnt;
+   char *dst;
+   unsigned char c;
 
-	dst = &adrbuf[ adrbuf[0] ? cnt : 0 ];
+   dst = &ira->adrbuf[ira->adrbuf[0] ? cnt : 0];
 
-	do
-	{
-		c = *buf++;
-		*dst++ = c;
-	}
-	while (c);
+   do
+   {
+      c = *buf++;
+      *dst++ = c;
+   } while (c);
 
-	cnt = dst - &adrbuf[0] - 1;
+   cnt = dst - &ira->adrbuf[0] - 1;
 }
 
-char *argopt(int argc, char **argv, const char *foo, int *nextarg, char *option)
+char *argopt(int argc, char **argv, int *nextarg, char *option)
 {
-	char *odata;
+   char *odata, *p;
 
-	odata = 0;
+   odata = NULL;
 
-	if (argc > *nextarg)
-	{
-		char *p;
+   if (argc > *nextarg)
+   {
+      p = argv[*nextarg];
 
-		p = argv[*nextarg];
+      if (*p == '-')
+      {
+         *nextarg += 1;
+         p++;
 
-		if (*p == '-')
-		{
-			*nextarg += 1;
-			p++;
+         *option = *p;
+         odata = p + 1;
+      }
+   }
 
-			*option = *p;
-			odata = p + 1;
-		}
-	}
-
-	return odata;
+   return odata;
 }
 
 int stricmp(const char *str1, const char *str2)
 {
-  const unsigned char *us1 = (const unsigned char *)str1,
-                      *us2 = (const unsigned char *)str2;
+   const unsigned char *us1 = (const unsigned char *) str1,
+         *us2 = (const unsigned char *) str2;
 
-  while (tolower(*us1) == tolower(*us2++))
-    if (*us1++ == '\0')
-      return 0;
-  return (tolower(*us1) - tolower(*--us2));
+   while (tolower(*us1) == tolower(*us2++))
+      if (*us1++ == '\0')
+         return 0;
+   return (tolower(*us1) - tolower(*--us2));
 }
 
 int strnicmp(const char *str1, const char *str2, size_t n)
 {
-  if (str1==NULL || str2==NULL)
-    return 0;
+   if (str1 == NULL || str2 == NULL)
+      return 0;
 
-  if (n) {
-    const unsigned char *us1 = (const unsigned char *)str1,
-                        *us2 = (const unsigned char *)str2;
+   if (n)
+   {
+      const unsigned char *us1 = (const unsigned char *) str1,
+            *us2 = (const unsigned char *) str2;
 
-    do {
-      if (tolower(*us1) != tolower(*us2++))
-        return tolower(*us1) - tolower(*--us2);
-      if (*us1++ == '\0')
-        break;
-    }
-    while (--n != 0);
-  }
-  return 0;
+      do
+      {
+         if (tolower(*us1) != tolower(*us2++))
+            return tolower(*us1) - tolower(*--us2);
+         if (*us1++ == '\0')
+            break;
+      } while (--n != 0);
+   }
+
+   return 0;
 }
 
 int stccpy(char *p, const char *q, size_t n)
 {
-  char *t = p;
+   char *t = p;
 
-  while ((*p++ = *q++) && --n > 0);
-  p[-1] = '\0';
-  return p - t;
+   while ((*p++ = *q++) && --n > 0)
+      ;
+   p[-1] = '\0';
+
+   return p - t;
 }
 
-int stcd_l(const char *p, LONG *val)
+int32_t stcd_base(const char *p, int base)
 {
-  if (p) {
-    if (*p=='+' || *p=='-' || (*p>='0' && *p<='9')) {
-      char *p2;
+   int32_t result;
+   char *p2;
 
-      *val = (LONG)strtol(p, &p2, 10);
-      return p2 - p;
-    }
-  }
-  *val = 0;
-  return 0;
+   result = 0;
+   if (p)
+      if (*p == '+' || *p == '-' || (base == 10 ? isdigit((unsigned char) *p) : isxdigit((unsigned char) *p)))
+         result = (int32_t) strtol(p, &p2, base);
+
+   return result;
 }
 
-int stch_l(const char *p, LONG *val)
+int32_t stcd_l(const char *p)
 {
-  if (p) {
-    if (*p=='+' || *p=='-' || isxdigit((unsigned char)*p)) {
-      char *p2;
+   return stcd_base(p, 10);
+}
 
-      *val = (LONG)strtol(p, &p2, 16);
-      return p2 - p;
-    }
-  }
-  *val = 0;
-  return 0;
+int32_t stch_l(const char *p)
+{
+   return stcd_base(p, 16);
+}
+
+int32_t parseAddress(const char *p)
+{
+   if (p[0] == '$')
+      return stch_l(p + 1);
+   else if (p[0] == '0' && tolower((unsigned char)p[1]) == 'x')
+      return stch_l(p + 2);
+   else
+      return stcd_l(p);
 }
 
 char *strupr(char *p)
 {
-  char *ret = p;
+   char *ret = p;
 
-  while (*p) {
-    if (islower(*p))
-      *p = toupper(*p);
-    p++;
-  }
-  return ret;
+   while (*p)
+   {
+      if (islower(*p))
+         *p = toupper(*p);
+      p++;
+   }
+
+   return ret;
 }
 
-/* stripped down implementation, without support for drive, path and ext */
-void strsfn(const char *file, char *drive, char *path, char *node, char *ext)
+char *mystrdup(char *p)
 {
-	const char *end = file + strlen(file);
-	const char *p = file;
-	extern void ExitPrg(const char *, ...);
+   char *s = myalloc(strlen(p) + 1);
+   strcpy(s, p);
 
-	if (drive || path || ext)
-		ExitPrg("strsfn called with non-NULL drive, path or ext!");
-
-	while (*p && *p != ':')
-		++p;
-	if (*p++ == ':')
-		file = p;
-	p = end;
-	while (p > file && p[-1] != '.' && p[-1] != '/')
-		--p;
-	if (p > file)
-		end = p - 1;
-	p = end;
-	while (p > file && p[-1] != '/')
-		--p;
-	if (node) {
-		if (end > p && end - p < FNSIZE) {
-			memcpy(node, p, end - p);
-			node += end - p;
-		}
-		*node = '\0';
-	}
-	end = p > file ? p - 1 : p;
-}
-
-void tmpfilename(char *name,size_t len)
-{
-#ifdef AMIGAOS
-	sprintf(name,"T:ira%08lxlabels",FindTask(NULL));
-#else
-	strcpy(name,"L_XXXXXX");
-	mktemp(name);
-#endif
+   return s;
 }
 
 void delfile(const char *path)
 {
-	FILE *f;
+   FILE *f;
 
-	if ((f = fopen(path,"rb"))) {
-		fclose(f);
-		remove(path);
-	}
+   if ((f = fopen(path, "rb")))
+   {
+      fclose(f);
+      remove(path);
+   }
 }
 
-void newlist(struct List *MyList)
+uint16_t be16(void *buf)
 {
-	MyList->lh_TailPred = (struct Node *)MyList;
-	MyList->lh_Tail = (struct Node *)NULL;
-	MyList->lh_Head = (struct Node *)&MyList->lh_Tail;
+   uint8_t *p = buf;
+
+   return (((uint16_t) p[0]) << 8) | (uint16_t) p[1];
 }
 
-struct Node *remhead(struct List *MyList)
+uint32_t be32(void *buf)
 {
-	struct Node *RemovedNode;
+   uint8_t *p = buf;
 
-	if ((RemovedNode = MyList->lh_Head)->ln_Succ) {
-		MyList->lh_Head = RemovedNode->ln_Succ;
-		MyList->lh_Head->ln_Pred = (struct Node *)&MyList->lh_Head;
-		return RemovedNode;
-	}
-	else
-		return NULL;
+   return (((uint32_t) p[0]) << 24) | (((uint32_t) p[1]) << 16) | (((uint32_t) p[2]) << 8) | (uint32_t) p[3];
 }
 
-void addtail(struct List *MyList, struct Node *MyNode)
+void wbe32(void *buf, uint32_t v)
 {
-	struct Node *OldPredNode;
+   uint8_t *p = buf;
 
-	OldPredNode = MyList->lh_TailPred;
-	MyNode->ln_Succ = (struct Node *)&MyList->lh_Tail;
-	MyNode->ln_Pred = OldPredNode;
-	OldPredNode->ln_Succ = MyNode;
-	MyList->lh_TailPred = MyNode;
+   *p++ = (uint8_t) (v >> 24);
+   *p++ = (uint8_t) (v >> 16);
+   *p++ = (uint8_t) (v >> 8);
+   *p = (uint8_t) v;
 }
 
-UWORD be16(void *buf)
+uint32_t readbe32(FILE *f)
 {
-	UBYTE *p = buf;
+   uint32_t d;
 
-	return (((UWORD)p[0]) << 8) | (UWORD)p[1];
-}
-
-ULONG be32(void *buf)
-{
-	UBYTE *p = buf;
-
-	return (((ULONG)p[0]) << 24) | (((ULONG)p[1]) << 16) |
-		(((ULONG)p[2]) << 8) | (ULONG)p[3];
-}
-
-void wbe32(void *buf,ULONG v)
-{
-	UBYTE *p = buf;
-
-	*p++ = (UBYTE)(v>>24);
-	*p++ = (UBYTE)(v>>16);
-	*p++ = (UBYTE)(v>>8);
-	*p = (UBYTE)v;
-}
-
-ULONG readbe32(FILE *f)
-{
-	ULONG d;
-
-	if (fread(&d,sizeof(ULONG),1,f) == 1)
-		return be32(&d);
-	return 0;
+   if (fread(&d, sizeof(uint32_t), 1, f) == 1)
+      return be32(&d);
+   return 0;
 }
